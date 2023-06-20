@@ -6,7 +6,7 @@ const request = require('request');
 
 const app = express();
 const port = 3000;
-const m3uUrl = process.env.ENDPOINT_URL;
+const m3uUrl = process.env.M3U_URL;
 const epgUrl = process.env.EPG_URL;
 const downloadPath = './downloaded.m3u';
 const epgDownloadPath = './downloaded.xml';
@@ -22,16 +22,24 @@ const downloadFile = (url, filePath) => {
 };
 
 // Schedule the periodic download of the M3U and EPG files
-cron.schedule('0 0 * * *', async () => {
+const scheduleDownload = async () => {
     try {
         await downloadFile(m3uUrl, downloadPath);
         console.log('M3U file downloaded successfully!');
         await downloadFile(epgUrl, epgDownloadPath);
         console.log('EPG file downloaded successfully!');
+        startServer();
     } catch (error) {
         console.error('Error downloading files:', error);
     }
-});
+};
+
+// Start the server
+const startServer = () => {
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+};
 
 // Ping route for uptimerobot
 app.all('/', (_req, res) => {
@@ -56,7 +64,5 @@ app.get('/epg', (req, res) => {
     fileStream.pipe(res);
 });
 
-// Start the server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+// Start the download and server
+scheduleDownload();
